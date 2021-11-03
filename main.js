@@ -19,8 +19,8 @@ var app = http.createServer(function(request,response){
     var _url = request.url;
     var queryData = url.parse(_url, true).query;
     var pathname = url.parse(_url, true).pathname;
-    if(pathname === '/'){
-      if(queryData.id === undefined){
+    if(pathname === '/'){//path name이 '/'일 때 를 호출 할때
+      if(queryData.id === undefined){//pathnamed이 '/'이고, id값이 없을 때
         db.query(`SELECT * FROM topic`, function(error,topics){
           var title = 'Welcome';
           var description = 'Hello, Node.js';
@@ -32,7 +32,7 @@ var app = http.createServer(function(request,response){
           response.writeHead(200);
           response.end(html);
         });
-      } else {
+      } else {//path name이 '/'이고, 다른 id 값을 호출 하였을 때
         db.query(`SELECT * FROM topic`, function(error,topics){
           if(error){
             throw(error);
