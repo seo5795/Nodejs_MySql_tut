@@ -6,6 +6,7 @@ var template = require('./lib/template.js');//template 모듈 호출
 var path = require('path');//파일/폴더/디렉터리 등의 경로를 편리하게 설정할 수 있는 기능을 제공.
 var db = require('./lib/db');
 var topic = require('./lib/topic');
+var author = require('./lib/author');
 
 var app = http.createServer(function(request,response){
     var _url = request.url;
@@ -27,7 +28,10 @@ var app = http.createServer(function(request,response){
       topic.update_process(request,response);
     } else if(pathname === '/delete_process'){
       topic.delete_process(request,response);
-    } else {
+    } else if(pathname === '/author'){
+      author.home(request,response);
+    }
+     else {
       response.writeHead(404);
       response.end('Not found');
     }
