@@ -43,13 +43,13 @@ var app = http.createServer(function(request,response){
             throw error2;
           }
           var title = topic[0].title;
+          //쿼리문으로 불러온 것은 배열형식으로 전달되므로 다음과 같이 사용
           var description = topic[0].description;
           var list = template.list(topics);
+          //topic 제목 목록
           var html = template.HTML(title, list,
-              `
-              <h2>${title}</h2>${description}
-              <p>by ${topic[0].name}</p>
-              `,
+              `<h2>${title}</h2>${description}
+              <p>by ${topic[0].name}</p>`,
               `<a href="/create">create</a>
               <a href="/update?id=${queryData.id}">update</a>
               <form action="delete_process" method="post">
@@ -90,9 +90,10 @@ var app = http.createServer(function(request,response){
     } else if(pathname === '/create_process'){
       var body = '';
       request.on('data', function(data){
+        //포스트 방식으로 많은양의 데이터를 전송할때 조각조각으로 데이터 추가
           body = body + data;
       });
-      request.on('end', function(){
+      request.on('end', function(){//더이상 줄 데이터가 없을 때 post에 데이터 객체화후 저장
           var post = qs.parse(body);
 
           db.query(`
