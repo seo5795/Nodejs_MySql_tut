@@ -5,6 +5,7 @@ var qs = require('querystring');//querystring 모듈은 url 객체의 query와 �
 var template = require('./lib/template.js');//template 모듈 호출
 var path = require('path');//파일/폴더/디렉터리 등의 경로를 편리하게 설정할 수 있는 기능을 제공.
 var db = require('./lib/db');
+var topic = require('./lib/topic');
 
 var app = http.createServer(function(request,response){
     var _url = request.url;
@@ -12,160 +13,20 @@ var app = http.createServer(function(request,response){
     var pathname = url.parse(_url, true).pathname;
     if(pathname === '/'){//path name이 '/'일 때 를 호출 할때
       if(queryData.id === undefined){//pathnamed이 '/'이고, id값이 없을 때
-        db.query(`SELECT * FROM topic`, function(error,topics){
-          var title = 'Welcome';
-          var description = 'Hello, Node.js';
-          var list = template.list(topics);
-          var html = template.HTML(title, list,
-              `<h2>${title}</h2>${description}`,
-              `<a href="/create">create</a>`);
-          console.log(topics);
-          response.writeHead(200);
-          response.end(html);
-        });
+        topic.home(request, response);
       } else {//path name이 '/'이고, 다른 id 값을 호출 하였을 때
-        db.query(`SELECT * FROM topic`, function(error,topics){
-          if(error){
-            throw(error);
-            //error메시지는 출력하지만 홈페이지에서 나오게되는 코드
-          }
-          db.query(`SELECT * FROM topic LEFT JOIN author ON topic.author_id=author.id WHERE topic.id=?`,[queryData.id], function(error2,topic){
-          if(error2){
-            throw error2;
-          }
-          var title = topic[0].title;
-          //쿼리문으로 불러온 것은 배열형식으로 전달되므로 다음과 같이 사용
-          var description = topic[0].description;
-          var list = template.list(topics);
-          //topic 제목 목록
-          var html = template.HTML(title, list,
-              `<h2>${title}</h2>${description}
-              <p>by ${topic[0].name}</p>`,
-              `<a href="/create">create</a>
-              <a href="/update?id=${queryData.id}">update</a>
-              <form action="delete_process" method="post">
-                <input type="hidden" name="id" value="${queryData.id}">
-                <input type="submit" value="delete">
-              </form>`
-          );
-          response.writeHead(200);
-          response.end(html);//html 코드 서버에서 실행시킴
-          })
-        });
+        topic.page(request, response);
       }
     } else if(pathname === '/create'){
-      db.query(`SELECT * FROM topic`, function(error,topics){
-        db.query(`SELECT * FROM author`, function(error2, authors){
-          console.log(authors); 
-          var title = 'Create';
-          var list = template.list(topics);
-          var html = template.HTML(title, list,
-              ` <form action="/create_process" method="post">
-              <p><input type="text" name="title" placeholder="title"></p>
-              <p>
-                <textarea name="description" placeholder="description"></textarea>
-              </p>
-              <p>
-               ${template.authorSelect(authors)}
-              </p>
-              <p>
-                <input type="submit">
-              </p>
-            </form>`,
-              `<a href="/create">create</a>`
-              );
-        response.writeHead(200);
-        response.end(html);
-        });
-      });
+      topic.create(request,response);
     } else if(pathname === '/create_process'){
-      var body = '';
-      request.on('data', function(data){
-        //포스트 방식으로 많은양의 데이터를 전송할때 조각조각으로 데이터 추가
-          body = body + data;
-      });
-      request.on('end', function(){//더이상 줄 데이터가 없을 때 post에 데이터 객체화후 저장
-          var post = qs.parse(body);
-
-          db.query(`
-            INSERT INTO topic (title, description, created, author_id) VALUES(?, ?, NOW(), ?)`,
-            [post.title, post.description, post.author],
-            function(error, result){
-              if(error){
-                throw error;
-              }
-              response.writeHead(302, {Location: `/?id=${result.insertId}`});
-            response.end();
-            }
-          )
-      });
+      topic.create_process(request,response);
     } else if(pathname === '/update'){
-      db.query('SELECT * FROM topic', function(error, topics){
-        if(error){
-          throw error;
-        }
-        db.query(`SELECT * FROM topic WHERE id=?`,[queryData.id], function(error2, topic){
-          if(error2){
-            throw error2;
-          }
-          db.query(`SELECT * FROM author`, function(error2, authors){
-            var list = template.list(topics);
-            var html = template.HTML(topic[0].title, list,
-              `
-              <form action="/update_process" method="post">
-                <input type="hidden" name="id" value="${topic[0].id}">
-                <p><input type="text" name="title" placeholder="title" value="${topic[0].title}"></p>
-                <p>
-                  <textarea name="description" placeholder="description">${topic[0].description}</textarea>
-                </p>
-                <p>
-                  ${template.authorSelect(authors, topic[0].author_id)}
-                </p>
-                <p>
-                  <input type="submit">
-                </p>
-              </form>
-              `,
-              `<a href="/create">create</a> <a href="/update?id=${topic[0].id}">update</a>`
-            );
-            response.writeHead(200);
-            response.end(html);
-          });
-         
-        });
-      });
+      topic.update(request, response);
     } else if(pathname === '/update_process'){
-      var body = '';
-      request.on('data', function(data){
-          body = body + data;
-      });
-      request.on('end', function(){
-          var post = qs.parse(body);
-          db.query(`
-            UPDATE topic SET title=?, description=?, author_id=? WHERE id=?`, [post.title, post.description, post.author, post.id],
-            function(error, result){
-              response.writeHead(302, {Location: `/?id=${post.id}`});
-            response.end();
-            }
-          )
-      });
+      topic.update_process(request,response);
     } else if(pathname === '/delete_process'){
-      var body = '';
-      request.on('data', function(data){
-          body = body + data;
-      });
-      request.on('end', function(){
-          var post = qs.parse(body);
-          var id = post.id;
-          var filteredId = path.parse(id).base;
-          db.query('DELETE FROM topic WHERE id = ?', [post.id], function(error,result){
-            if(error){
-              throw error;
-            }
-            response.writeHead(302, {Location: `/`});
-            response.end();
-          })
-      });
+      topic.delete_process(request,response);
     } else {
       response.writeHead(404);
       response.end('Not found');
