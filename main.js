@@ -39,7 +39,7 @@ var app = http.createServer(function(request,response){
     }else if(pathname === '/author/delete_process'){
       author.delete_process(request,response);
     }else if(pathname === '/search'){
-      topic.search_process(request,response);
+      topic.search(request,response);
     }
      else {
       response.writeHead(404);
